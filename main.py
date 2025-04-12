@@ -1,5 +1,5 @@
-import entities  # Asegúrate de que entities.py está en el mismo directorio
-import initial_access  # Importamos la clase `Cell` de `initial_access`
+import entities  # Make sure entities.py is in the same directory
+import initial_access  # Import the `Cell` class from `initial_access`
 import rrc
 
 def main():
@@ -17,7 +17,7 @@ def main():
     gnb.add_cell(initial_access.Cell(cell_id=2, plmn_id="310260", signal_strength=85, frequency=2600, cell_type="Small"))
     gnb.add_cell(initial_access.Cell(cell_id=3, plmn_id="310560", signal_strength=50, frequency=1800, cell_type="Macro"))
 
-    # Cambiar el "cell_barred" a False en la celda 2, por ejemplo
+    # Change "cell_barred" to False in cell 2, for example
     gnb.cells[1].cell_barred = False
 
     # UE searches for available cells
@@ -52,7 +52,7 @@ def main():
     print(f"Verifying UE state before PDU session request: {ue.state}")
     if ue.state == "RRC Connected":
         print("UE is in RRC Connected state. Proceeding with PDU session establishment.")
-        pdu_response = ue.pdu_session_establishment_request(gnb)
+        pdu_response = ue.pdu_session_establishment_request(core)
         print(f"PDU Session Establishment Response: {pdu_response}")
     else:
         print("Error: UE is not in RRC Connected state, cannot establish PDU session.")

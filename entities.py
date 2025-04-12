@@ -1,3 +1,59 @@
+import random
+
+class AUSF:
+    def authenticate(self, ue_identity, udm):
+        # AUSF authenticates UE with the help of UDM (Unified Data Management)
+        print(f"AUSF: Authenticating UE identity: {ue_identity}")
+        return {"authenticated": udm.authenticate(ue_identity), "algorithm": "5G-AKA"}
+
+class UDM:
+    def __init__(self):
+        # Stores subscriber data for authentication
+        self.subscriber_data = {"imsi-001010123456789", "imsi-001310123456789"}
+
+    def authenticate(self, ue_identity):
+        # UDM authenticates the UE using IMSI (International Mobile Subscriber Identity)
+        print(f"UDM: Authenticating UE {ue_identity}")
+        if ue_identity in self.subscriber_data:
+            return True
+        else:
+            return False
+
+    def register_ue(self, ue_identity):
+        # Registers the UE after successful authentication
+        print(f"UDM: UE registered: {ue_identity}")
+    
+    def get_subscription_data(self, ue_identity):
+        # Retrieves subscription data for the UE
+        print(f"UDM: Subscription data retrieved for UE: {ue_identity}")
+
+class gNB:
+    def __init__(self):
+        self.cells = []  # gNB manages a list of cells
+        self.state = "Idle"
+
+    def add_cell(self, cell):
+        """Add a cell to the gNB"""
+        self.cells.append(cell)
+
+    def process_rrc_connection_request(self, ue):
+        """Simulate gNB receiving the RRC connection request and sending setup"""
+        print(f"gNB: Processing RRC connection request from UE with selected cell ID: {ue.selected_cell.cell_id}...")
+        setup_data = {
+            "plmn_id": ue.selected_cell.plmn_id,
+            "cell_id": ue.selected_cell.cell_id,
+            "signal_strength": ue.selected_cell.signal_strength,
+            "frequency": ue.selected_cell.frequency,
+            "network_configuration": "Configured for high-speed data"
+        }
+        self.state = "RRC Connection Setup Sent"
+        return setup_data
+    
+    def rrc_connection_setup_complete(self, ue):
+        """Simulate gNB completing the RRC connection setup"""
+        print(f"gNB: Sending RRC connection setup to UE with configuration: {ue.selected_cell.frequency} Hz")
+        ue.rrc_connection_setup_complete()
+
 class Core:
     def __init__(self):
         self.amf = AMF()  # Core initializes the AMF (Access and Mobility Management Function) for the network
@@ -34,46 +90,30 @@ class AMF:
             print(f"AMF: Authentication failed for UE: {ue_identity}")
             return False
 
-class AUSF:
-    def authenticate(self, ue_identity, udm):
-        # AUSF authenticates UE with the help of UDM (Unified Data Management)
-        print(f"AUSF: Authenticating UE identity: {ue_identity}")
-        return {"authenticated": udm.authenticate(ue_identity), "algorithm": "5G-AKA"}
-
-class UDM:
-    def __init__(self):
-        # Stores subscriber data for authentication
-        self.subscriber_data = {"imsi-001010123456789", "imsi-001310123456789"}
-
-    def authenticate(self, ue_identity):
-        # UDM authenticates the UE using IMSI (International Mobile Subscriber Identity)
-        print(f"UDM: Authenticating UE {ue_identity}")
-        if ue_identity in self.subscriber_data:
-            return True
+    def process_pdu_session_request(self, ue):
+        """ Handle the PDU Session Establishment Request sent by UE to the Core """
+        print(f"AMF: Processing PDU Session Establishment Request from UE with identity: {ue.identity}")
+        # Verify if UE is registered
+        if ue.rm_state == "RM-REGISTERED":
+            print(f"AMF: PDU session request validated for UE: {ue.identity}")
+            # PDU session establishment handled directly in the Core
+            return "PDU Session Established"
         else:
-            return False
-
-    def register_ue(self, ue_identity):
-        # Registers the UE after successful authentication
-        print(f"UDM: UE registered: {ue_identity}")
-    
-    def get_subscription_data(self, ue_identity):
-        # Retrieves subscription data for the UE
-        print(f"UDM: Subscription data retrieved for UE: {ue_identity}")
+            print(f"AMF: UE is not registered, cannot process PDU session request.")
+            return "PDU Session Establishment Failed"
 
 class UE:
     def __init__(self, supported_plmn_ids, identity):
-        # UE constructor, stores supported PLMN IDs and identity (IMSI)
         self.supported_plmn_ids = supported_plmn_ids
         self.state = "Idle"
         self.selected_cell = None
         self.rm_state = "RM-DEGISTERED"  # Registration state is initially "DEGISTERED"
         self.identity = identity
 
-    def pdu_session_establishment_request(self, gnb):
-        """Simulate UE sending PDU Session Establishment Request"""
-        print(f"UE: Sending PDU Session Establishment Request to gNB with Cell ID: {self.selected_cell.cell_id}")
-        return gnb.process_pdu_session_establishment(self)
+    def pdu_session_establishment_request(self, core):
+        """Simulate UE sending PDU Session Establishment Request to AMF (Core)"""
+        print(f"UE: Sending PDU Session Establishment Request to AMF...")
+        return core.amf.process_pdu_session_request(self)
 
     def search_cells(self, available_cells):
         """Simulate the UE searching for available cells"""
@@ -128,42 +168,33 @@ class UE:
         else:
             print(f"UE: with identity: {self.identity} not authenticated")
 
-
-class gNB:
-    def __init__(self):
-        self.cells = []  # gNB manages a list of cells
-        self.state = "Idle"
-
-    def add_cell(self, cell):
-        """Add a cell to the gNB"""
-        self.cells.append(cell)
+class Cell:
+    def __init__(self, cell_id, signal_strength, plmn_id, frequency, cell_type):
+        self.cell_id = cell_id
+        self.signal_strength = signal_strength
+        self.plmn_id = plmn_id
+        self.frequency = frequency  # New property for frequency
+        self.cell_type = cell_type  # New property for cell type
     
-    def process_rrc_connection_request(self, ue):
-        """Simulate gNB receiving the RRC connection request and sending setup"""
-        print(f"gNB: Processing RRC connection request from UE with selected cell ID: {ue.selected_cell.cell_id}...")
-        setup_data = {
-            "plmn_id": ue.selected_cell.plmn_id,
-            "cell_id": ue.selected_cell.cell_id,
-            "signal_strength": ue.selected_cell.signal_strength,
-            "frequency": ue.selected_cell.frequency,
-            "network_configuration": "Configured for high-speed data"
+    def send_mib(self):
+        # Simulate sending MIB (Master Information Block)
+        mib = {
+            "cell_id": self.cell_id,
+            "plmn_id": self.plmn_id,
+            "bandwidth": random.choice([10, 20, 40, 80, 100]),
+            "scheduling_info": random.randint(1, 10)
         }
-        self.state = "RRC Connection Setup Sent"
-        return setup_data
+        print(f"Cell {self.cell_id} sent MIB: {mib}")
+        return mib
     
-    def rrc_connection_setup_complete(self, ue):
-        """Simulate gNB completing the RRC connection setup"""
-        print(f"gNB: Sending RRC connection setup to UE with configuration: {ue.selected_cell.frequency} Hz")
-        ue.rrc_connection_setup_complete()
-
-    # Method to process PDU session establishment request
-    def process_pdu_session_establishment(self, ue):
-        """Simulate gNB processing PDU Session Establishment request"""
-        print(f"gNB: Processing PDU Session Establishment Request from UE with Cell ID: {ue.selected_cell.cell_id}")
-        # Verify if the UE is in the RRC Connected state before establishing the session
-        if ue.state == "RRC Connected":
-            print(f"gNB: Establishing PDU session for UE with identity {ue.identity}")
-            return "PDU Session Established"
-        else:
-            print("gNB: PDU session establishment failed. UE not in RRC Connected state.")
-            return "PDU Session Establishment Failed"
+    def send_sib(self):
+        # Simulate sending SIB (System Information Block)
+        sib = {
+            "plmn_id": self.plmn_id,
+            "tracking_area_code": random.randint(1, 1000),
+            "cell_barred": random.choice([True, False]),
+            "allowed_access_classes": list(range(1, 11)),
+            "cell_type": self.cell_type  
+        }
+        print(f"Cell {self.cell_id} sent SIB: {sib}")
+        return sib

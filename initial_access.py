@@ -6,10 +6,11 @@ class Cell:
         self.cell_id = cell_id
         self.signal_strength = signal_strength
         self.plmn_id = plmn_id
-        self.frequency = frequency  # Nueva propiedad para la frecuencia
-        self.cell_type = cell_type  # Nueva propiedad para el tipo de celda
+        self.frequency = frequency  # New property for frequency
+        self.cell_type = cell_type  # New property for cell type
     
     def send_mib(self):
+        # Simulate sending MIB (Master Information Block)
         mib = {
             "cell_id": self.cell_id,
             "plmn_id": self.plmn_id,
@@ -20,6 +21,7 @@ class Cell:
         return mib
     
     def send_sib(self):
+        # Simulate sending SIB (System Information Block)
         sib = {
             "plmn_id": self.plmn_id,
             "tracking_area_code": random.randint(1, 1000),
@@ -29,17 +31,3 @@ class Cell:
         }
         print(f"Cell {self.cell_id} sent SIB: {sib}")
         return sib
-
-
-    def send_rach(self, ue):
-        print(f"UE is sending RACH request to Cell {self.cell_id}...")
-        time.sleep(1)  
-        return self.process_rach_request()
-    
-    def process_rach_request(self):
-        if self.signal_strength > 80: 
-            print(f"gNB (Cell {self.cell_id}) accepts RACH request from UE.")
-            return True
-        else:
-            print(f"gNB (Cell {self.cell_id}) rejects RACH request from UE due to weak signal.")
-            return False
